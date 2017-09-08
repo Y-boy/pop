@@ -1,0 +1,159 @@
+<!DOCTYPE>
+<html>
+<html>
+<head>
+	<title>pop</title>
+	<meta charset="utf-8">
+	<script type="text/javascript" src="jquery.js"></script>
+</head>
+<body>
+	<div style="position: relative;">
+		<div id="pool" style="position: absolute; width: 700px; height: 500px; border: 10px solid #eee;"></div>
+		<!-- pool是气泡的容器，showBoard是挡在pool之上的一层 -->
+		<div id="showBoard" style="position: absolute; width: 700px; height: 500px; border: 10px solid #eee; z-index: 999;"></div>
+	</div>
+</body>
+<script type="text/javascript">
+
+var x_mouse, y_mouse, countOfBall = 0;
+
+$("#showBoard").on("mousemove", function(e){
+	// 在showBoard上移动
+	Ball.moveActiveOne({
+		x: e.offsetX,
+		y: e.offsetY
+	});
+});
+
+$("#showBoard").on("click", function(e){
+	Ball.createActiveOne({
+		x: e.offsetX,
+		y: e.offsetY,
+		i: "-1",
+		d: Math.floor(Math.random() * 6 + 3) * 6
+	});
+	play();
+});
+
+$(document).ready(function() {
+	alert("双击框内开始游戏");
+	Ball.showList();
+	initScene(30);
+});
+
+var play = function(){
+	for (var i = 0; i < Ball.list.length; i++) {
+		Ball.slip(Ball.list[i], i);
+	}
+}
+
+var initScene = function(num){
+	for(var item = 0; item < num; item++) {
+		Ball.create({
+			x: Math.floor(Math.random()*701),
+			y: Math.floor(Math.random()*501),
+			i: item,
+			d: Math.floor(Math.random() * 6 + 3) * 12
+		});
+	}
+}
+
+var Ball = {
+	// 尽管封装成一个类，但是这里其实没有用上多少面向对象的知识，耦合度还很高，Ball不能直接当独立的插件用
+	d: 0,
+	list: [],
+
+	create: function(opt){
+		var color = "#80B6EC";
+		if (opt.color != null) {
+			color = opt.color;
+		}
+		if (opt.d != null) {
+			// console.log(opt.d);
+			this.d = opt.d;
+		}
+		var div = $("<div>").css({
+			"position": "absolute",
+			"background": "none",
+			"border": "1px solid",
+			"boxShadow": "0px 0px 35px " + color,
+			"borderRadius": "50%",
+			"textAlign": "center",
+			"top": opt.y - this.d/2,
+			"left": opt.x - this.d/2,
+			"width": this.d,
+			"height": this.d,
+			"borderColor": color,
+			"zIndex": opt.i
+		}).attr("id", "_" + opt.i);
+		$("#pool").append(div);
+		if(!opt.status){
+			this.list.push({
+				id: "#_" + opt.i,
+				x: opt.x,
+				y: opt.y,
+				d: this.d
+			});
+		}
+	},
+	slip: function(entity, index){
+		var deta_x = (Math.random() * 2 - 1) / 10;
+		var deta_y = (Math.random() * 2 - 1) / 10;
+		setInterval(function(){
+			$(entity.id).css({
+				"top": entity.y - entity.d/2,
+				"left": entity.x - entity.d/2
+			});
+			entity.x += deta_x;
+			entity.y += deta_y;
+			if (entity.x < 0) {
+				entity.x += 700;
+			} else if(entity.x > 700){
+				entity.x -=700;
+			}
+			if(entity.y < 0){
+				entity.y += 500;
+			} else if(entity.y > 500){
+				entity.y -= 500;
+			}
+			Ball.list[index].x = entity.x;
+			Ball.list[index].y = entity.y;
+		}, 10);
+	},
+	createActiveOne: function(opt){
+		if($("#pool").find("#_-1").length == "0"){
+			opt.color = "#f00";
+			opt.status = true;
+			this.create(opt);
+		}
+	},
+	moveActiveOne: function(opt){
+		var activeOne = $("#pool").find("#_-1");
+		opt.d = activeOne.css("width");
+		activeOne.css({
+			"top": parseInt(opt.y) - parseInt(opt.d)/2,
+			"left": parseInt(opt.x) - parseInt(opt.d)/2
+		});
+		this.checkCrash(opt);
+	},
+	showList: function(){
+		console.log(this.list);
+	},
+	checkCrash: function(opt){
+		for(var i = 0; i < this.list.length; i++){
+			if (this.dis2mouse(i, opt) < 1) {
+				alert("碰到别的气泡啦");
+				location.reload();
+				break;
+			}
+		}
+	},
+	dis2mouse: function(index, mouse){
+		var deta_x_2 = Math.pow(mouse.x - this.list[index].x, 2);
+		var deta_y_2 = Math.pow(mouse.y - this.list[index].y, 2);
+		this.list[index].distance = Math.sqrt(deta_x_2 + deta_y_2) - this.list[index].d/2;
+		return Math.floor(this.list[index].distance - parseInt(mouse.d)/2);
+	}
+}
+</script>
+</html>
